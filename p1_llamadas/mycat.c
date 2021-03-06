@@ -11,20 +11,20 @@ int main(int argc, char *argv[])
 	int fd, n_read;
 	char buffer[BUFFER_SIZE];
 
-	/*If the number of arguments is less than two (argv[0] -> program, argv[|] -> file to be shown) we print the error and return -1*/
+	// If the number of arguments is less than two (argv[0] -> program, argv[|] -> file to be shown) we print the error and return -1
 	if(argc < 2)
 	{
 		printf("Not enough arguments\n");
 		return -1;
 	}
 	
-	/*Intentamos abrir el archivo que recibimos en argv[1], si este no existe imprimimos un error*/
-	if ((fd=open(argv[1], O_RDONLY))<0) {
+	// Intentamos abrir el archivo que recibimos en argv[1], si este no existe imprimimos un error
+	if ((fd=open(argv[1], O_RDONLY)) < 0) {
 		perror("File does not exist\n");
 		close(fd);
   }
-   /* Bucle lectura del fichero*/
-	while (n_read = read(fd, buffer, BUFFER_SIZE) > 0){
+   // Bucle lectura del fichero
+	while ((n_read = read(fd, buffer, BUFFER_SIZE)) > 0){
 		write(STDOUT_FILENO, buffer, n_read);	
 	}
 
