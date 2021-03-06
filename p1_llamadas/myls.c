@@ -7,33 +7,39 @@
 
 int main(int argc, char *argv[])
 {	
-		struct dirent *lectura;
-        DIR *directorio;
+    struct dirent *lectura;
+    DIR *directorio;
 
-        // Ensure correct argument count.
+    char path[PATH_MAX];
 
-        if (argc != 2) {
-            printf ("Usage: testprog <dirname>\n");
-            return 1;
-        }
-
-        // Ensure we can open directory.
-
-        directorio = opendir (argv[1]);
-        if (directorio == NULL) {
-            printf ("Cannot open directory '%s'\n", argv[1]);
-            return 1;
-        }
-
-        // Process each entry.
-
-        while ((lectura = readdir(directorio)) != NULL) {
-            printf ("%s\n", lectura->d_name);
-        }
-
-        // Close directory and exit.
-
-        closedir (directorio);
-        return 0;
+    if (argc < 1) {
+        printf("Not enough arguments\n");
+        return -1;
     }
+
+    if (argc > 1){
+        directorio = opendir(argv[1]);
+    }
+
+    if (argc == 1){
+        if (getcwd(path, PATH_MAX) != NULL){
+            directorio = opendir(path);
+        }else{
+            perror("Unable to get current path");
+            return -1;
+        }
+    }
+
+    if (directorio == NULL) {
+        printf ("Cannot open directory");
+        return -1;
+    }
+
+    while ((lectura = readdir(directorio)) != NULL) {
+        printf ("%s\n", lectura->d_name);
+    }
+
+    closedir (directorio);
+    return 0;
+}
 
