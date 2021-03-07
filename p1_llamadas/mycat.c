@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
 	if ((fd=open(argv[1], O_RDONLY)) < 0) {
 		perror("File does not exist\n");
 		close(fd);
+		return -1;
   }
    // Bucle lectura del fichero
 	while ((n_read = read(fd, buffer, BUFFER_SIZE)) > 0){

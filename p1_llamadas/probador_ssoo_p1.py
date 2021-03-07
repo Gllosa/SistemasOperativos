@@ -169,17 +169,17 @@ def testExerciseCAT(folder):
 	result2 = pro.returncode
 
         #Comparamos las salidas e imprimimos resultados
-        print "CORRECTOR MYCAT. Salida esperada:"
+        print "CORRECTOR MYCAT Linea 172. Salida esperada:"
         print result1
         print "CORRECTOR MYCAT. Salida del programa:"
-        print result2
+        print str(result2)+"hola"
 
         if result1 == result2:
                 print "CORRECTOR MYCAT. PRUEBA CORRECTA"
 		resultString += "1 "
 		result += 1.11112
         else:
-                print "CORRECTOR MYCAT. PRUEBA INCORRECTA. Las salidas difieren"
+                print "CORRECTOR MYCAT. soy incorrecto PRUEBA INCORRECTA. Las salidas difieren"
 		resultString += "0 "
 	#Realizamos la prueba sugerida (cat nofile)
         result1 = 255
@@ -466,7 +466,7 @@ if(__name__=="__main__"):
 			sys.exit(0)
 		
 		#Comprobamos que el fichero de autores existe
-		if not os.path.isfile(tempFolder+"Autores.txt"):
+		if not os.path.isfile("Autores.txt"):
 			print "El fichero Autores.txt no existe"
 			sys.exit(0)
 
