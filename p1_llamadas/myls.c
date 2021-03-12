@@ -7,20 +7,23 @@
 
 int main(int argc, char *argv[])
 {	
+    DIR *directorios[argc - 1];
     struct dirent *lectura;
-    DIR *directorio;
-
+    
     char path[PATH_MAX];
 
     // Si tenemos mas de un argumento es que nos ha llegado una ruta
+    int i;
     if (argc > 1){
-        directorio = opendir(argv[1]);
+        for (i = 0; i < (argc - 1); i++){
+            directorios[i] = opendir(argv[i + 1]);
+        }
     }
 
     // Si tenemos un solo argumento significa que no nos ha llegado una ruta y por lo tanto obtenemos la ruta actual
     if (argc == 1){
         if (getcwd(path, PATH_MAX) != NULL){
-            directorio = opendir(path);
+            directorios[0] = opendir(path);
         }else{
             perror("Unable to get current path");
             return -1;
@@ -28,18 +31,22 @@ int main(int argc, char *argv[])
     }
 
     // Devolvemos un error si no hemos podido abrir el directorio
-    if (directorio == NULL) {
-        printf ("Cannot open directory");
-        return -1;
-    }
+    for (i = 0; i < argc - 1; i++){
+        if (directorios[i] == NULL) {
+            printf ("Cannot open directory");
+            return -1;
+        }
 
-    // Leemos las entradas del directorio y las imprimimos
-    while ((lectura = readdir(directorio)) != NULL) {
-        printf ("%s\n", lectura->d_name);
-    }
+        // Leemos las entradas del directorio y las imprimimos
+        while ((lectura = readdir(directorios[i])) != NULL) {
+            printf ("%s\n", lectura->d_name);
+        }
 
-    //cerramos el directorio
-    closedir (directorio);
+        // Cerramos el directorio
+        closedir(directorios[i]);
+    }
+    
+
     return 0;
 }
 
