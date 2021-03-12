@@ -7,15 +7,17 @@
 
 int main(int argc, char *argv[])
 {	
+    // Tenemos un array de directorios, ya que no spuede llegar mas de uno
     DIR *directorios[argc - 1];
     struct dirent *lectura;
     
     char path[PATH_MAX];
 
-    // Si tenemos mas de un argumento es que nos ha llegado una ruta
+    // Si tenemos mas de un argumento es que nos ha llegado una o más rutas
     int i;
     if (argc > 1){
         for (i = 0; i < (argc - 1); i++){
+            // Abrimos los directorios y los metemos en el array
             directorios[i] = opendir(argv[i + 1]);
         }
     }
@@ -25,12 +27,12 @@ int main(int argc, char *argv[])
         if (getcwd(path, PATH_MAX) != NULL){
             directorios[0] = opendir(path);
         }else{
-            perror("Unable to get current path");
+            perror("No es posible obtener la ruta actual");
             return -1;
         }
     }
 
-    // Devolvemos un error si no hemos podido abrir el directorio
+    // Devolvemos un error si no hemos podido abrir alguno de los directorios
     for (i = 0; i < argc - 1; i++){
         if (directorios[i] == NULL) {
             printf ("Cannot open directory");
