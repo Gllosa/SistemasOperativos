@@ -8,7 +8,7 @@
 
 int main(int argc, char *argv[])
 {
-	int fd, n_read;
+	int fd, n_leidos;
 	char buffer[BUFFER_SIZE];
 
 	// If the number of arguments is less than two (argv[0] -> program, argv[|] -> file to be shown) we print the error and return -1
@@ -19,17 +19,19 @@ int main(int argc, char *argv[])
 	}
 	
 	// Intentamos abrir el archivo que recibimos en argv[1], si este no existe imprimimos un error
-	if ((fd=open(argv[1], O_RDONLY)) < 0) {
-		perror("No existe el archivo o directorio\n");
-		close(fd);
-		return -1;
-  }
-   // Bucle lectura del fichero
-	while ((n_read = read(fd, buffer, BUFFER_SIZE)) > 0){
-		write(STDOUT_FILENO, buffer, n_read);	
+	int i;
+	for (i = 0; i < (argc - 1); i++){
+		if ((fd=open(argv[1 + i], O_RDONLY)) < 0) {
+			perror("No existe el archivo o directorio\n");
+			close(fd);
+			return -1;
 	}
+	// Bucle lectura del fichero
+		while ((n_leidos = read(fd, buffer, BUFFER_SIZE)) > 0){
+			write(STDOUT_FILENO, buffer, n_leidos);	
+		}
 
-	close(fd);
+		close(fd);}
 	return 0;
 }
 
