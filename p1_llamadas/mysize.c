@@ -10,8 +10,8 @@ int main(int argc, char *argv[])
 {
 	int fd;
 
-	struct dirent *lectura;
 	DIR *directorio;
+	struct dirent *lectura;
 
 	char path[PATH_MAX];
 
@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
     directorio = opendir(path);
 
 	while ((lectura = readdir(directorio)) != NULL) {
+		// Comprobamos el tipo de archivo que hemos leido
         if (lectura -> d_type == DT_REG){
 			if ((fd = open(lectura -> d_name, O_RDONLY)) < 0){
 				perror("File could not be opened\n");
