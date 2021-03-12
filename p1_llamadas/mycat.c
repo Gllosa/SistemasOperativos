@@ -18,20 +18,26 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	
-	// Intentamos abrir el archivo que recibimos en argv[1], si este no existe imprimimos un error
+	// Intentamos abrir los archivos que recibimos en argv, si alguno no existe imprimimos un error
 	int i;
+	// Iteramos sobre los ficheros que nos lleguen
 	for (i = 0; i < (argc - 1); i++){
+
+		// Abrimos el fichero
 		if ((fd=open(argv[1 + i], O_RDONLY)) < 0) {
 			perror("No existe el archivo o directorio\n");
 			close(fd);
 			return -1;
-	}
-	// Bucle lectura del fichero
+		}
+
+		// Leemos el fichero y escribimos su contenido en la salida standard
 		while ((n_leidos = read(fd, buffer, BUFFER_SIZE)) > 0){
 			write(STDOUT_FILENO, buffer, n_leidos);	
 		}
+	
+		close(fd);
+	}
 
-		close(fd);}
 	return 0;
 }
 
