@@ -284,7 +284,7 @@ def testExerciseLS(folder):
 		resultString += "1 "
 		result += 1.11112
         else:
-                print "CORRECTOR MYLS. PRUEBA INCORRECTA. Las salidas difieren"
+                print "CORRECTOR MYLS. PRUEBA INCORRECTA. Las salidas difieren holaaa"
 		resultString += "0 "
 
 	#Realizamos la prueba sugerida (ls -f -1 nothing)
