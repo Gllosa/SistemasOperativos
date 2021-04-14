@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <math.h>
 
+
 #define MAX_COMMANDS 8
 
 
@@ -50,12 +51,12 @@ void getCompleteCommand(char*** argvv, int num_command) {
 
 
 /**
- * Main sheell  Loop  
+ * Main sheell  Loop
  */
 int main(int argc, char* argv[])
 {
     /**** Do not delete this code.****/
-    int end = 0; 
+    int end = 0;
     int executed_cmd_lines = -1;
     char *cmd_line = NULL;
     char *cmd_lines[10];
@@ -76,203 +77,140 @@ int main(int argc, char* argv[])
 
     char ***argvv = NULL;
     int num_commands;
-    int total = 0;
 
-	while (1){ 
-	
-        error: ;
+		int Acu=0;
+
+	while (1)
+	{
+		error: ;
 		int status = 0;
-	    int command_counter = 0;
+	  int command_counter = 0;
 		int in_background = 0;
 		signal(SIGINT, siginthandler);
 
-		// Prompt 
+		// Prompt
 		write(STDERR_FILENO, "MSH>>", strlen("MSH>>"));
 
 		// Get command
-        //********** DO NOT MODIFY THIS PART. IT DISTINGUISH BETWEEN NORMAL/CORRECTION MODE***************
-        executed_cmd_lines++;
-        if( end != 0 && executed_cmd_lines < end) {
-            command_counter = read_command_correction(&argvv, filev, &in_background, cmd_lines[executed_cmd_lines]);
-        }else if( end != 0 && executed_cmd_lines == end)
-            return 0;
-        else
-            command_counter = read_command(&argvv, filev, &in_background); //NORMAL MODE
-        //************************************************************************************************
+                //********** DO NOT MODIFY THIS PART. IT DISTINGUISH BETWEEN NORMAL/CORRECTION MODE***************
+                executed_cmd_lines++;
+                if( end != 0 && executed_cmd_lines < end) {
+                    command_counter = read_command_correction(&argvv, filev, &in_background, cmd_lines[executed_cmd_lines]);
+                }else if( end != 0 && executed_cmd_lines == end)
+                    return 0;
+                else
+                    command_counter = read_command(&argvv, filev, &in_background); //NORMAL MODE
+                //************************************************************************************************
 
 
-            /************************ STUDENTS CODE ********************************/
-        // Si el numero de comandos se pasa del máximo imprimimos un error
-        if (command_counter > 0) {
-            if (command_counter > MAX_COMMANDS)
-                printf("Error: Numero máximo de comandos es %d \n", MAX_COMMANDS);
-            }
+              /************************ STUDENTS CODE ********************************/
 
-        // Obtenemos todos los comandos
-        for (int cont = 0; cont < command_counter; cont++) {
-                getCompleteCommand(argvv, cont);
-            }
-        
-        // A partir de aquí definimos Mycalc
+                if (command_counter > 0) {
+                  if (command_counter > MAX_COMMANDS)
+                    perror("Error: Numero máximo de comandos\n");
+                }
 
-        // Comprobamos que el primer argumento sea "mycalc"
-        if (strcmp("mycalc", argv_execvp[0]) == 0) {
-            // Comprobamos que los demas argumentos no sean NULL
-            // para poder realizar la operación
-            if (argv_execvp[1]!=NULL && argv_execvp[2]!=NULL && argv_execvp[3]!=NULL) {
-                // Comprobamos si la operación deseada es la suma
-                if (strcmp("add", argv_execvp[2]) == 0) {
-                    // Convertimos los arrays de chars que nos llegan a ints
-                    int x = atoi(argv_execvp[1]);
-                    int y = atoi(argv_execvp[3]);
+                for (int i = 0; i < command_counter; i++) {
+                  getCompleteCommand(argvv, i);
+                }
 
-                    // Realizamos la suma y la guardamos en total
-                    total = total + x + y;
+            		//Codigo mycalc
+                if (strcmp(argv_execvp[0], "mycalc") == 0) {
+                  if (argv_execvp[1]!=NULL && argv_execvp[2]!=NULL && argv_execvp[3]!=NULL) {
+										//Operacion add
+                    if (strcmp(argv_execvp[2], "add") == 0) {
+                      int x = atoi(argv_execvp[1]);
+                      int y = atoi(argv_execvp[3]);
+                      Acu = Acu + x + y;
+                      char buf[20];
+                      sprintf(buf, "%d", Acu);
+                      const char *p = buf;
+											//variable de entorno Acc
 
-                    // En este buffer guardaremos el resultado
-                    char buffer[25];
-                    sprintf(buffer, "%d", total);
-                    
-                    // Puntero a buffer
-                    const char *resultado = buffer;
+											if (setenv("Acc", p, 1) < 0) {
+												perror("Error al dar valor a la variable de entorno\n");
+												goto error;
+											}
 
-                    // Cambiamos el entorno del buffer a "Acc"
-                    if (setenv("Acc", resultado, 1) < 0) {
-                        // Si es menor que 0 imprimimos error de cambio de entorno
-                        perror("Error: cambio de entorno no válido\n");
-                        goto error;
-                    }
+                      char str[100];
+                      snprintf(str, 100, "[OK] %d + %d = %d; Acc %s\n", x, y, x + y, getenv("Acc"));
+                      
+											if((write(2, str, strlen(str)))<0){
+												perror ("Error write");
+												goto error;
+											}
+											//Operacion mod, en esta, no se cambia el modulo
+                    } else if (strcmp(argv_execvp[2], "mod") == 0) {
+                      int x = atoi(argv_execvp[1]);
+                      int y = atoi(argv_execvp[3]);
+                      char str[100];
 
-                    // Preparamos la salida con un array de caracteres de longitud 
-                    char salida[65];
-                    snprintf(salida, 65, "[OK] %d + %d = %d; Acc %s\n", x, y, x + y, getenv("Acc"));
-                    
-                    if((write(2, salida, strlen(salida)))<0){
-                        perror ("Error: No se puede escribir");
-                        goto error;
-                    }
-
-                // Comprobamos si la operación desada es el módulo
-                } else if (strcmp("mod", argv_execvp[2]) == 0) {
-                    int x = atoi(argv_execvp[1]);
-                    int y = atoi(argv_execvp[3]);
-                    char salida[65];
-
-                    snprintf(salida, 65, "[OK] %d %% %d = %d * %d + %d\n", x, y, y, abs(floor(x / y)), x % y);
-                    if((write(2, salida, strlen(salida)))<0){
-                        perror ("Error: No se puede escribir");
-                        goto error;
-                    }
-                // Si no ha entradado en ninguna de las operaciones anteriores
-                // devolvemos un error.
-                } else {
+                      snprintf(str, 100, "[OK] %d %% %d = %d * %d + %d\n", x, y, y, abs(floor(x / y)), x % y);
+                      if((write(2, str, strlen(str)))<0){
+												perror ("Error write");
+												goto error;
+											}
+											//Control de sintaxis de mycalc
+                    } else {
                       if((write(1, "[ERROR] La estructura del comando es <operando 1> <add/mod> <operando 2>",
                             strlen("[ERROR] La estructura del comando es <operando 1> <add/mod> <operando 2>"))) <0){
 															perror ("Error write");
 															goto error;
 														}
                     }
-                } else {
+                  } else {
                     if((write(1, "[ERROR] La estructura del comando es <operando 1> <add/mod> <operando 2>",
                           strlen("[ERROR] La estructura del comando es <operando 1> <add/mod> <operando 2>"))) <0){
-                        perror ("Error write");
-                        goto error;
-                    }
+														perror ("Error write");
+														goto error;
+													}
                   }
-				
-                // Pasamos a definir mycp
-                // Comprobamos que el primer argumento sea mycp
+									//Operacion mycp
                 } else if (strcmp(argv_execvp[0], "mycp") == 0) {
-                    // Comprobamos que los siguientes argumentos no son NULL
-                    if (argv_execvp[1]!=NULL && argv_execvp[2]!=NULL) {
-                        // Abrimos el fichero
-                        int f_inicial = open(argv_execvp[1], O_RDONLY, 0644);
+                  if (argv_execvp[1]!=NULL && argv_execvp[2]!=NULL) {
+                    int descorigen = open(argv_execvp[1], O_RDONLY, 0644);
+                    if (descorigen >= 0) {
+                      char buf[1024];
+                      int descdestino = open(argv_execvp[2], O_TRUNC | O_WRONLY | O_CREAT, 0644);
 
-                        // Si no hay errrores al abrir el archivo...
-                        if (f_inicial >= 0) {
-                            char buf[1024];
+                      // Vamos leyendo el fichero y lo sacamos por terminal con STDOUT_FILENO
+                      int nread, nwrite;
+                      while ((nread = read(descorigen, buf, 1024)) > 0) {
 
-                            // Abrimos el fichero destino
-                            int f_final = open(argv_execvp[2], O_TRUNC | O_WRONLY | O_CREAT, 0644);
+                        do {
 
-                            // Vamos leyendo el fichero y lo sacamos por terminal con STDOUT_FILENO
-                            int nread, nwrite;
-                            while ((nread = read(f_inicial, buf, 1024)) > 0) {
-
-                            do {
-
-                            nwrite = write(f_final, buf, nread);
-                            if (nwrite < 0) {
-                                if (close(f_final) < 0) {
-                                perror("Error al cerrar el fichero\n");
-                                                                goto error;
-                                }
-                                perror("Error al escribir en la linea de comandos\n");
-                                                            goto error;
+                          nwrite = write(descdestino, buf, nread);
+                          if (nwrite < 0) {
+                            if (close(descdestino) < 0) {
+                              perror("Error al cerrar el fichero\n");
+															goto error;
                             }
-                            nread -= nwrite;
+                            perror("Error al escribir en la linea de comandos\n");
+														goto error;
+                          }
+                          nread -= nwrite;
 
-                            } while (nread > 0);
-                        }
-                        if (nread < 0) {
-                            perror("Error al leer fichero\n");
-                            if (close(descorigen) < 0) {
-                            perror("Error al cerrar el fichero\n");
-                            }
-                        }
-                        // Cuando acabamos de leer el fichero lo cerramos, tambien lo cerramos ante un error cuando lo tenemos abierto
-
+                        } while (nread > 0);
+                      }
+                      if (nread < 0) {
+                        perror("Error al leer fichero\n");
                         if (close(descorigen) < 0) {
-                            perror("Error al cerrar el fichero\n");
+                          perror("Error al cerrar el fichero\n");
                         }
-                        if (close(descdestino) < 0) {
-                            perror("Error al cerrar el fichero\n");
-                        }
-                        char str[100];
+                      }
+                      // Cuando acabamos de leer el fichero lo cerramos, tambien lo cerramos ante un error cuando lo tenemos abierto
 
-                        snprintf(str, 100, "[OK] Copiado con exito el fichero %s a %s\n", argv_execvp[1], argv_execvp[2]);
+                      if (close(descorigen) < 0) {
+                        perror("Error al cerrar el fichero\n");
+                      }
+                      if (close(descdestino) < 0) {
+                        perror("Error al cerrar el fichero\n");
+                      }
+                      char str[100];
 
-                        write(1, str, strlen(str));char buf[1024];
-                        int descdestino = open(argv_execvp[2], O_TRUNC | O_WRONLY | O_CREAT, 0644);
+                      snprintf(str, 100, "[OK] Copiado con exito el fichero %s a %s\n", argv_execvp[1], argv_execvp[2]);
 
-                        // Vamos leyendo el fichero y lo sacamos por terminal con STDOUT_FILENO
-                        int nread, nwrite;
-                        while ((nread = read(descorigen, buf, 1024)) > 0) {
-
-                            do {
-
-                            nwrite = write(descdestino, buf, nread);
-                            if (nwrite < 0) {
-                                if (close(descdestino) < 0) {
-                                perror("Error al cerrar el fichero\n");
-                                                                goto error;
-                                }
-                                perror("Error al escribir en la linea de comandos\n");
-                                                            goto error;
-                            }
-                            nread -= nwrite;
-
-                            } while (nread > 0);
-                        }
-                        if (nread < 0) {
-                            perror("Error al leer fichero\n");
-                            if (close(descorigen) < 0) {
-                            perror("Error al cerrar el fichero\n");
-                            }
-                        }
-                        // Cuando acabamos de leer el fichero lo cerramos, tambien lo cerramos ante un error cuando lo tenemos abierto
-
-                        if (close(descorigen) < 0) {
-                            perror("Error al cerrar el fichero\n");
-                        }
-                        if (close(descdestino) < 0) {
-                            perror("Error al cerrar el fichero\n");
-                        }
-                        char str[100];
-
-                        snprintf(str, 100, "[OK] Copiado con exito el fichero %s a %s\n", argv_execvp[1], argv_execvp[2]);
-
-                        write(1, str, strlen(str));
+                      write(1, str, strlen(str));
 											//Controlamos la correcta apertura del fichero
                     } else {
                       if((write(1, "[ERROR] Error al abrir el fichero origen : No such file or directory",
