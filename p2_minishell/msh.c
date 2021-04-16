@@ -246,18 +246,12 @@ int main(int argc, char * argv[]) {
         } else if (command_counter == 1) {
             // Creamos un fork
             int pid = fork();
-            if (pid == -1) {
-                perror("Error: al crear proceso");
-                return (-1);
-            }
-
             int fd;
             int stat;
             // Este es el hijo
-            if (pid == 0) {
+            if (pid == 0) { // filev[0] entrada filev[1] salida filev[2] error
                 // Si es posible abrimos los ficheros de entrada, salida y error
-                if (strcmp(filev[1], "0") != 0) {
-
+                if (strcmp(filev[1], "0") == 1) {
                     if ((close(1)) < 0) {
                         perror("Error al cerrar fichero salida estándar");
                         goto error;
@@ -268,7 +262,8 @@ int main(int argc, char * argv[]) {
                         goto error;
                     }
                 }
-                if (strcmp(filev[0], "0") != 0) {
+                // Fichero de entrada
+                if (strcmp(filev[0], "0") == 1) {
                     if ((close(0)) < 0) {
                         perror("Error al cerrar descriptor");
                         goto error;
@@ -278,17 +273,8 @@ int main(int argc, char * argv[]) {
                         goto error;
                     }
                 }
-                if (strcmp(filev[2], "0") != 0) {
-                    if ((close(2)) < 0) {
-                        perror("Error al cerrar descriptor");
-                        goto error;
-                    }
-                    if ((fd = open(filev[2], O_TRUNC | O_WRONLY | O_CREAT, 0644)) < 0) {
-                        perror("Error al abrir fichero\n");
-                        goto error;
-                    }
-                }
-                //Hacemos que el hijo ejecute
+                
+                // Hacemos que el hijo ejecute
 
                 if (execvp(argv_execvp[0], argv_execvp) < 0) {
                     perror("Error al ejecutar\n");
@@ -296,17 +282,8 @@ int main(int argc, char * argv[]) {
                 }
             // Este es el padre
             } else {
-                if (fd != 0) {
-                    if ((close(fd)) < 0) {
-                        perror("Error al cerrar descriptor");
-                        goto error;
-                    }
-                }
                 if (!in_background) {
                     while (wait( & stat) > 0);
-                    if (stat < 0) {
-                        perror("Error ejecucion del hijo\n");
-                    }
                 }
             }
 
@@ -325,29 +302,13 @@ int main(int argc, char * argv[]) {
 
             for (int i = 0; i < n; i++) {
                 // Pasamos a crear la proxima tuberia en caso de que no sea el ultimo proceso
-                if (i != n - 1) {
-                    if (pipe(fd) < 0) {
-                        perror("Error en pipe\n");
-                        exit(0);
-                    }
+                if (n - 1 != i) {
+                    pipe(fd);
                 }
 
                 // Creamos un nuevo proceso
                 switch (pid = fork()) {
                 
-                // Si da error lo imprimimos
-                case -1:
-                    perror("Error en fork\n");
-
-                    if ((close(fd[0])) < 0) {
-                        perror("Error al cerrar fichero");
-                        goto error;
-                    }
-                    if ((close(fd[1])) < 0) {
-                        perror("Error al cerrar fichero");
-                        goto error;
-                    }
-                    exit(0);
                 //Proceso hijo
                 case 0:
                     if (strcmp(filev[2], "0") != 0) {
@@ -361,7 +322,7 @@ int main(int argc, char * argv[]) {
                             goto error;
                         }
                     }
-
+                    
                     if (i == 0 && strcmp(filev[0], "0") != 0) {
                         if ((close(0)) < 0) {
                             perror("Error al cerrar fichero");
@@ -373,37 +334,37 @@ int main(int argc, char * argv[]) {
                         }
                     } else {
                         if ((close(0)) < 0) {
-                            perror("Error al cerrar descriptor");
+                            perror("Error al cerrar fichero");
                             goto error;
                         }
-                        if (dup( in ) < 0) {
-                            perror("Error al duplicar descriptor\n");
+                        if (dup(in) < 0) {
+                            perror("Error al duplicar fichero\n");
                             goto error;
                         }
-                        if ((close( in )) < 0) {
-                            perror("Error al cerrar descriptor");
+                        if ((close(in)) < 0) {
+                            perror("Error al cerrar fichero");
                             goto error;
                         }
                     }
 
                     // Se cierra el fichero de la salida estandar en caso de no ser el ultimo proceso
-                    if (i != n - 1) {
+                    if (n - 1 != i) {
 
                         if ((close(1)) < 0) {
-                            perror("Error al cerrar descriptor");
+                            perror("Error al cerrar fichero");
                             goto error;
                         }
 
                         if (dup(fd[1]) < 0) {
-                            perror("Error al duplicar descriptor\n");
+                            perror("Error al duplicar fichero\n");
                             goto error;
                         }
                         if ((close(fd[0])) < 0) {
-                            perror("Error al cerrar descriptor");
+                            perror("Error al cerrar fichero");
                             goto error;
                         }
                         if ((close(fd[1])) < 0) {
-                            perror("Error al cerrar descriptor");
+                            perror("Error al cerrar fichero");
                             goto error;
                         }
                     } else {
@@ -421,11 +382,11 @@ int main(int argc, char * argv[]) {
                     }
 
                     getCompleteCommand(argvv, i);
-                    if (in_background) {
+                    if(in_background) {
                         printf("[%d]\n", getpid());
                     }
-                    // Ejecutamos
-                    if (execvp(argv_execvp[0], argv_execvp) < 0) {
+                    // Ejecutamos todos los comandos recibidos
+                    if(execvp(argv_execvp[0], argv_execvp) < 0) {
                         perror("Error al ejecutar\n");
                         goto error;
                     }
@@ -433,11 +394,11 @@ int main(int argc, char * argv[]) {
 
                 // Padre
                 default:
-                    if ((close( in )) < 0) {
+                    if ((close(in)) < 0) {
                         perror("Error al cerrar descriptor");
                         goto error;
                     }
-                    if (i != n - 1) {
+                    if (n - 1 != i) {
                         if (( in = dup(fd[0])) < 0) {
                             perror("Error al duplicar descriptor\n");
                             goto error;
@@ -455,7 +416,6 @@ int main(int argc, char * argv[]) {
                 }
             }
             if (fdesc != 0) {
-
                 if ((close(fdesc)) < 0) {
                     perror("Error al cerrar el fichero");
                     goto error;
