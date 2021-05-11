@@ -21,15 +21,15 @@
  * @return
  */
 //Creacion de mutex, variables condición y descriptor de fichero:
-//ring controla el buffer
-//des controla el descriptor de fichero
-pthread_mutex_t ring;
-pthread_mutex_t des;
-pthread_cond_t lleno;
-pthread_cond_t vacio;
+//buffer_controller controla el buffer
+//fd controla el descriptor de fichero
+pthread_mutex_t fd;
+pthread_mutex_t buffer_controller;
+pthread_cond_t empty;
+pthread_cond_t full;
 struct queue *cola;
 const char *fichero;
-FILE *descriptorP;
+FILE *pDescriptor;
 int total = 0;
 
 struct param {
@@ -44,29 +44,25 @@ void *producir(void *arg) {
   struct param *p = arg;
 
   // Hallamos el descriptor que corresponde al primer indice, para que no se mezclen bloqueamos y desbloqueamos
-  if(pthread_mutex_lock(&des) < 0){
+  if(pthread_mutex_lock(&fd) < 0){
     perror("Error de mutex");
     exit(-1);
   }
 
-  descriptorP = fopen(fichero, "r");
-  if( descriptorP == NULL){
-    perror("Error al abrir fichero");
-    exit(-1);
-  }
+  pDescriptor = fopen(fichero, "r");
+  
   int counter = 0;
   char chr;
   while (counter < p->id_ini) {
-    chr = fgetc(descriptorP);
+    chr = fgetc(pDescriptor);
     if (chr == '\n') {
       counter++;
     }
   }
   // Almacenamos la posicion por la que va, de esta manera la podemos recuperar.
-  FILE *current = descriptorP;
+  FILE *current = pDescriptor;
 
-
-  if(pthread_mutex_unlock(&des) < 0){
+  if(pthread_mutex_unlock(&fd) < 0){
     perror("Error de mutex");
     exit(-1);
   }
@@ -74,33 +70,23 @@ void *producir(void *arg) {
   int i, i1, i2 = 0;
   for (int j = p->op; j > 0; j--) {
 
-    // Sacamos los valores a introducir en el buffer del puntero, y salvamos la nueva posicion del mismo.
-    if(pthread_mutex_lock(&des) < 0){
-      perror("Error de mutex");
-      exit(-1);
-    }
 
-    descriptorP = current;
-    if(fscanf(descriptorP, "%d %d %d", &i, &i1, &i2) < 0){
+    pDescriptor = current;
+    if(fscanf(pDescriptor, "%d %d %d", &i, &i1, &i2) < 0){
       perror("Error al extraer datos archivo");
       exit(-1);
     }
-    current = descriptorP;
+    current = pDescriptor;
 
-
-    if(pthread_mutex_unlock(&des) < 0){
-      perror("Error de mutex");
-      exit(-1);
-    }
 
     struct element temporal = {i1, i2};
 
-    if(pthread_mutex_lock(&ring) < 0){
+    if(pthread_mutex_lock(&buffer_controller) < 0){
       perror("Error de mutex");
       exit(-1);
     }
     while (queue_full(cola))
-      if(pthread_cond_wait(&lleno, &ring) < 0){
+      if(pthread_cond_wait(&full, &buffer_controller) < 0){
         perror("Error de variable de condicion");
         exit(-1);
       }
@@ -110,11 +96,11 @@ void *producir(void *arg) {
       perror("Error al insertar");
       exit(-1);
     }
-    if(pthread_cond_signal(&vacio) < 0){
+    if(pthread_cond_signal(&empty) < 0){
       perror("Error de variable de condicion");
       exit(-1);
     }
-    if(pthread_mutex_unlock(&ring) < 0){
+    if(pthread_mutex_unlock(&buffer_controller) < 0){
       perror("Error de mutex");
       exit(-1);
     }
@@ -127,13 +113,13 @@ void *consumir(int *numValores) {
   // Bucle de todo mientras no se hallan leido todas las ops esperadas.
   for (int k = 0; k < *numValores; k++) {
 
-    if(pthread_mutex_lock(&ring) < 0){
+    if(pthread_mutex_lock(&buffer_controller) < 0){
       perror("Error de mutex");
       exit(-1);
     }
 
     while (queue_empty(cola))
-      if(pthread_cond_wait(&vacio, &ring) < 0){
+      if(pthread_cond_wait(&empty, &buffer_controller) < 0){
         perror("Error de variable de condicion");
         exit(-1);
       }
@@ -160,11 +146,11 @@ void *consumir(int *numValores) {
     default:
       perror("Valor no valido");
     }
-    if(pthread_cond_signal(&lleno) < 0){
+    if(pthread_cond_signal(&full) < 0){
       perror("Error de variable de condicion");
       exit(-1);
     }
-    if(pthread_mutex_unlock(&ring) < 0){
+    if(pthread_mutex_unlock(&buffer_controller) < 0){
       perror("Error de mutex");
       exit(-1);
     }
@@ -226,19 +212,19 @@ int main(int argc, const char *argv[]) {
   }
 
   cola = queue_init(size);
-  if(pthread_mutex_init(&ring, NULL) < 0){
+  if(pthread_mutex_init(&buffer_controller, NULL) < 0){
     perror("Error inicializar variable de condicion");
     exit(-1);
   }
-  if(pthread_mutex_init(&des, NULL) < 0){
+  if(pthread_mutex_init(&fd, NULL) < 0){
     perror("Error inicializar variable de condicion");
     exit(-1);
   }
-  if(pthread_cond_init(&lleno, NULL) < 0){
+  if(pthread_cond_init(&full, NULL) < 0){
     perror("Error inicializar mutex");
     exit(-1);
   }
-  if(pthread_cond_init(&vacio, NULL) < 0){
+  if(pthread_cond_init(&empty, NULL) < 0){
     perror("Error inicializar mutex");
     exit(-1);
   }
@@ -290,23 +276,23 @@ int main(int argc, const char *argv[]) {
 
   printf("Total: %i €.\n", total);
   queue_destroy(cola);
-  if(pthread_mutex_destroy(&des) < 0){
+  if(pthread_mutex_destroy(&fd) < 0){
     perror("Error al destruir mutex");
     exit(-1);
   }
-  if(pthread_mutex_destroy(&ring) < 0){
+  if(pthread_mutex_destroy(&buffer_controller) < 0){
     perror("Error al destruir mutex");
     exit(-1);
   }
-  if(  pthread_cond_destroy(&lleno) < 0){
+  if(  pthread_cond_destroy(&full) < 0){
     perror("Error al destruir variable condicion");
     exit(-1);
   }
-  if(pthread_cond_destroy(&vacio) < 0){
+  if(pthread_cond_destroy(&empty) < 0){
     perror("Error al destruir variable condicion");
     exit(-1);
   }
-  if(fclose(descriptorP) < 0){
+  if(fclose(pDescriptor) < 0){
     perror("Error al cerrar descriptor");
     exit(-1);
   }

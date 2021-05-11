@@ -9,7 +9,7 @@ struct element {
 typedef struct queue {
   // Define the struct yourself
   int length;
-  struct element *ring;
+  struct element *buffer_controller;
   int head;
   int tail;
   int size;

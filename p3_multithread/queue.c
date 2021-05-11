@@ -10,7 +10,7 @@
 // To create a queue
 queue *queue_init(int size) {
   queue *q = (queue *)malloc(sizeof(queue));
-  q->ring = malloc(size * sizeof(struct element));
+  q->buffer_controller = malloc(size * sizeof(struct element));
   q->size = size;
   q->length = 0;
   q->head = 0;
@@ -21,7 +21,7 @@ queue *queue_init(int size) {
 // To Enqueue an element, head se inserta y tail salen.
 int queue_put(queue *q, struct element *x) {
   if (queue_full(q) == 0) {
-    q->ring[q->head] = *x;
+    q->buffer_controller[q->head] = *x;
     q->head = (q->head + 1) % q->size;
     q->length = q->length + 1;
     return 0;
@@ -33,7 +33,7 @@ int queue_put(queue *q, struct element *x) {
 struct element *queue_get(queue *q) {
   struct element *elem;
   if (queue_empty(q) == 0) {
-    elem = &(q->ring[q->tail]);
+    elem = &(q->buffer_controller[q->tail]);
     q->tail = (q->tail + 1) % q->size;
     q->length = q->length - 1;
   }
